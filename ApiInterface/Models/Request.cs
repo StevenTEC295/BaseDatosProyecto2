@@ -2,7 +2,8 @@
 {
     internal enum RequestType 
     { 
-        SQLSentence = 0
+        SQLSentence = 0,
+        Createdb = 1
     }
 
     internal class Request
@@ -10,5 +11,6 @@
         public required RequestType RequestType { get; set; } 
 
         public required string RequestBody { get; set; }
+        
     }
 }
