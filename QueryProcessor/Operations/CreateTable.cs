@@ -10,4 +10,5 @@ namespace QueryProcessor.Operations
             return Store.GetInstance().CreateTable();
         }
     }
+    
 }

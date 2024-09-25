@@ -69,3 +69,4 @@ function Send-SQLCommand {
 # This is an example, should not be called here
 Send-SQLCommand -command "CREATE TABLE ESTUDIANTE"
 Send-SQlCommand -command "SELECT * FROM ESTUDIANTE"
+Send-SQlCommand -command "CREATE DATABASE PRUEBA1"

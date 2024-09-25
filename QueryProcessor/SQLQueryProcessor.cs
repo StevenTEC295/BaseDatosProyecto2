@@ -2,6 +2,7 @@
 using QueryProcessor.Exceptions;
 using QueryProcessor.Operations;
 using StoreDataManager;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QueryProcessor
 {
@@ -14,7 +15,13 @@ namespace QueryProcessor
             if (sentence.StartsWith("CREATE TABLE"))
             {
                 return new CreateTable().Execute();
-            }   
+            }
+            if (sentence.StartsWith("CREATE DATABASE"))
+            {
+                string[] QueryList = sentence.Split(' ');
+                string DBName = QueryList[2];
+                return new CreateDatabase(DBName).Execute();
+            }
             if (sentence.StartsWith("SELECT"))
             {
                 return new Select().Execute();
