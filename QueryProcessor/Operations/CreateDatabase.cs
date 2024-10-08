@@ -1,14 +1,13 @@
-﻿using System;
+using Entities;
+using StoreDataManager;
 
-namespace 
+namespace QueryProcessor.Operations
 {
-    internal class CreateDatabase
+    public class CreateDataBase
     {
-        internal OperationStatus Execute()
+        public OperationStatus Execute(string NombreDeArchivo)
         {
-            return Store.GetInstance().CreateDatabase();
+            return Store.GetInstance().CreateDataBase(NombreDeArchivo);
         }
     }
-
 }
-

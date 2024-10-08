@@ -2,29 +2,38 @@
 using ApiInterface.Models;
 using Entities;
 using QueryProcessor;
+using System.Text.Json;
 
 namespace ApiInterface.Processors
 {
-    internal class SQLSentenceProcessor(Request request) : IProcessor 
-    {
-        public Request Request { get; } = request;
+    internal class SQLSentenceProcessor : IProcessor //Permite dirigir los tipos de consultas a diferentes procesadores.
+    {//en este caso permite dirigir las solicitudes SQLSentence al SQLQueryProcessor.
+        public Request Request { get; }
+
+        public SQLSentenceProcessor(Request request) //Realiza automáticamente el proceso para ejecutar las operaciones tipo SQL
+        {
+            Request = request;
+        }
 
         public Response Process()
         {
-            var sentence = this.Request.RequestBody;
-            var result = SQLQueryProcessor.Execute(sentence);
-            var response = this.ConvertToResponse(result);
-            return response;
+            var sentence = this.Request.RequestBody.Trim(); //Se añade ".Trim" para evitar que la respuesta lleve espacios.
+            var (status, data) = SQLQueryProcessor.Execute(sentence); //Se recibe la información enviada desde 
+            // el StoredDataManager
+            return this.ConvertToResponse(status, data); //Finalmente se retorna Serealizado como tipo Data,
+            //para que pueda ser enviado por el Socket
         }
 
-        private Response ConvertToResponse(OperationStatus result)
-        {
-            return new Response
+        private Response ConvertToResponse(OperationStatus status, string data) //Cuando ya se procesó la solicitud, la procesamos 
+        {//para poder pasarla como respuesta atravez del socket.
+            var response = new Response
             {
-                Status = result,
+                Status = status,
                 Request = this.Request,
-                ResponseBody = string.Empty
+                ResponseBody = JsonSerializer.Serialize(new { Data = data })
             };
+            Console.WriteLine($"Response created: {JsonSerializer.Serialize(response)}"); // Debug line
+            return response;
         }
     }
 }

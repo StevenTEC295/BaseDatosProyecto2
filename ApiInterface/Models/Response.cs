@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using ApiInterface.InternalModels;
+﻿using ApiInterface.InternalModels;
 using Entities;
 
 namespace ApiInterface.Models
@@ -11,6 +10,5 @@ namespace ApiInterface.Models
         public required OperationStatus Status { get; set; }
 
         public required string ResponseBody { get; set; }
-
     }
 }
