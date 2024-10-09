@@ -1,26 +1,7 @@
-CREATE DATABASE UNIVERSIDAD;
 SET UNIVERSIDAD;
-CREATE TABLE Empleados (
-    ID INTEGER NOT NULL PRIMARY KEY,
-    Nombre VARCHAR(50) NOT NULL,
-    Apellido VARCHAR(50) NOT NULL,
-    FechaContratacion DATETIME,
-    Salario DOUBLE
-);
-INSERT INTO Empleados (ID, Nombre, Apellido, FechaContratacion, Salario) VALUES (1, 'Joseph', 'Piedra', '2022-03-31 12:23:43', 2508.00);
-SELECT * FROM Empleados;
 
 
-CREATE TABLE Estudiantes (
-    ID INTEGER NOT NULL PRIMARY KEY,
-    Nombre VARCHAR(50) NOT NULL,
-    Apellido VARCHAR(50) NOT NULL,
-    FechaDeIngreso DATETIME,
-    Beca DOUBLE
-);
+INSERT INTO Empleados (ID, Nombre, Apellido, FechaContratacion, Salario) VALUES (2, 'Steven', 'Pérez', '2022-03-31 12:23:43', 3000.00);
 
-DROP TABLE Estudiantes;
 
-CREATE INDEX Empleados_Id ON Empleados(ID) OF TYPE BST;
-
-SELECT Nombre FROM Empleados WHERE Salario == 2508.00;
+SELECT * FROM Empleados WHERE Salario == 3000;

@@ -6,31 +6,6 @@ namespace QueryProcessor
 {
     public class SQLQueryProcessor
     {
-        private static string[] ParseColumnsToSelect(string selectPart)
-            {
-                // Remover "SELECT" y "FROM" para quedarse solo con las columnas
-                const string selectKeyword = "SELECT";
-                const string fromKeyword = "FROM";
-                var columnsPart = selectPart.Substring(selectKeyword.Length, selectPart.IndexOf(fromKeyword) - selectKeyword.Length).Trim();
-
-                // Si es un asterisco (*), seleccionar todas las columnas
-                if (columnsPart == "*")
-                {
-                    return new string[] { "*" }; // Indica que se seleccionan todas las columnas
-                }
-
-                // Si no, separar por comas las columnas específicas
-                return columnsPart.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                .Select(c => c.Trim())
-                                .ToArray();
-            }
-
-        private static string ExtractTableNameFromSelect(string sentence)
-        {
-            const string fromKeyword = "FROM";
-            var fromIndex = sentence.IndexOf(fromKeyword) + fromKeyword.Length;
-            return sentence.Substring(fromIndex).Trim().Split(' ')[0]; // Extraer el nombre de la tabla después de "FROM"
-        }
         public static (OperationStatus Status, string Data) Execute(string sentence)
         {
             if (sentence.StartsWith("CREATE TABLE"))
@@ -61,18 +36,53 @@ namespace QueryProcessor
 
             // Implementación de la sentencia SELECT
             if (sentence.StartsWith("SELECT"))
+{
+    const string selectDataBaseKeyWord = "SELECT * FROM";
+    string whereClause = null;
+    string columnName = null;
+    string conditionValue = null;
+    string operatorValue = "==";  // Operador por defecto
+
+    var dataBaseToSelect = sentence.Substring(selectDataBaseKeyWord.Length).Trim();
+
+    // Comprobar si hay una cláusula WHERE
+    if (dataBaseToSelect.Contains("WHERE"))
+    {
+        // Dividir la sentencia para obtener la base de datos y la cláusula WHERE
+        var parts = dataBaseToSelect.Split(new[] { "WHERE" }, StringSplitOptions.RemoveEmptyEntries);
+        dataBaseToSelect = parts[0].Trim(); // Nombre de la base de datos o tabla
+        whereClause = parts[1].Trim(); // La cláusula WHERE
+
+        // Procesar la cláusula WHERE (asumimos que el formato es `columna operador valor`)
+        var whereParts = whereClause.Split(new[] { ' ', '=' }, StringSplitOptions.RemoveEmptyEntries);
+        if (whereParts.Length >= 2)
+        {
+            columnName = whereParts[0].Trim();  // Nombre de la columna
+            conditionValue = whereParts[1].Trim();  // Valor de la condición
+
+            // Si hay un operador (e.g., <, >, <=, >=, !=)
+            if (whereParts.Length == 3)
             {
-                const string selectDataBaseKeyWord = "SELECT * FROM";
-                var DataBaseToSelect = sentence.Substring(selectDataBaseKeyWord.Length).Trim(); //Igual, eliminamos la pabra clave.
-
-                if (string.IsNullOrWhiteSpace(DataBaseToSelect))  //En caso de que se ingrese mal.
-                {
-                    throw new InvalidOperationException("Debe ingresar un nombre de una BD para seleccionar");
-                }
-
-                var result = new Select().Execute(DataBaseToSelect); //Pasamos el nombre de la pase de datos a seleccionar.
-                return result;
+                operatorValue = whereParts[1].Trim();  // Operador como <, >, !=, etc.
+                conditionValue = whereParts[2].Trim(); // Valor de la condición
             }
+        }
+        else
+        {
+            throw new InvalidOperationException("Formato inválido en la cláusula WHERE.");
+        }
+    }
+
+    if (string.IsNullOrWhiteSpace(dataBaseToSelect))
+    {
+        throw new InvalidOperationException("Debe ingresar un nombre de una tabla para seleccionar.");
+    }
+
+    // Llamar a Select con o sin WHERE según corresponda
+    var result = new Select().Execute(dataBaseToSelect, columnName, conditionValue, operatorValue);
+    return result;
+}
+
             //Auxiliares de Select
             
             if (sentence.StartsWith("CREATE DATABASE"))

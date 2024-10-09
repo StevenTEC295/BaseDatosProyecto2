@@ -6,11 +6,18 @@ namespace QueryProcessor.Operations
 {
     internal class Select
     {
-        public (OperationStatus Status, string Data) Execute(string NombreDeBDaSeleccionar) //Se modificó este método para que sea capáz
-        {//de poder recibir no solo la respuesta de la creación de la solcitiud,si no tambien la Data
-            //como en el caso del Selectt, que necesita enviar el contenido del archivo binario.
-            var result = Store.GetInstance().Select(NombreDeBDaSeleccionar);
-            return result;
+        public (OperationStatus Status, string Data) Execute(string NombreDeBDaSeleccionar, string columnName = null, string conditionValue = null, string operatorValue = "==")
+        {
+            if (string.IsNullOrEmpty(columnName) || string.IsNullOrEmpty(conditionValue))
+            {
+                // Si no se proporciona la columna o el valor de la condición, ejecutamos un Select general
+                return Store.GetInstance().Select(NombreDeBDaSeleccionar);  // Select sin WHERE
+            }
+            else
+            {
+                // Si se proporciona una columna y un valor, ejecutamos el Select con WHERE
+                return Store.GetInstance().SelectWhere(NombreDeBDaSeleccionar, columnName, conditionValue, operatorValue);
+            }
         }
     }
 }
