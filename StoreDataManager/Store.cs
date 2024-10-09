@@ -98,159 +98,173 @@ namespace StoreDataManager
             return dropTableOperation.Execute(tableName, RutaDeterminadaPorSet);
         }
 
-                //!!!!!!!!!!!!!!!!!!!!Este método tiene que ser reestructurado según como se pide en el documento.!!!!!!!!!!!!!!!!!!!!!
+        // Función para ejecutar la operación SELECT con el WHERE
         public (OperationStatus Status, string Data) SelectWhere(string tableName, string columnName, string conditionValue, string operatorValue = "==")
-{
-    string fullPath = Path.Combine(RutaDeterminadaPorSet, tableName + ".Table");
-
-    if (!File.Exists(fullPath))
-    {
-        Console.WriteLine($"Error: The table file '{fullPath}' does not exist.");
-        return (OperationStatus.Error, $"Error: La tabla '{tableName}' no existe.");
-    }
-
-    StringBuilder resultBuilder = new StringBuilder();
-
-    try
-    {
-        using (FileStream stream = File.Open(fullPath, FileMode.Open))
-        using (BinaryReader reader = new BinaryReader(stream))
         {
-            string startMarker = reader.ReadString();
-            if (startMarker != "TINYSQLSTART")
+            string fullPath = Path.Combine(RutaDeterminadaPorSet, tableName + ".Table");
+
+            if (!File.Exists(fullPath))
             {
-                throw new InvalidDataException("Formato de archivo inválido.");
+                Console.WriteLine($"Error: The table file '{fullPath}' does not exist.");
+                return (OperationStatus.Error, $"Error: La tabla '{tableName}' no existe.");
             }
 
-            int columnCount = reader.ReadInt32();
-            List<ColumnDefinition> columns = new List<ColumnDefinition>();
+            
+            StringBuilder resultBuilder = new StringBuilder();
 
-            for (int i = 0; i < columnCount; i++)
+            try
             {
-                var column = new ColumnDefinition
+                // Abrir el archivo de la tabla
+                using (FileStream stream = File.Open(fullPath, FileMode.Open))
+                using (BinaryReader reader = new BinaryReader(stream))
                 {
-                    Name = reader.ReadString(),
-                    DataType = reader.ReadString(),
-                    IsNullable = reader.ReadBoolean(),
-                    IsPrimaryKey = reader.ReadBoolean(),
-                    VarcharLength = reader.ReadInt32()
-                };
-                columns.Add(column);
-            }
-
-            string endStructureMarker = reader.ReadString();
-            if (endStructureMarker != "ENDSTRUCTURE")
-            {
-                throw new InvalidDataException("Estructura del archivo inválida");
-            }
-
-            resultBuilder.AppendLine(string.Join(",", columns.Select(c => c.Name)));
-
-            string dataStartMarker = reader.ReadString();
-            if (dataStartMarker != "DATASTART")
-            {
-                throw new InvalidDataException("Marca donde comienza la información no encontrada");
-            }
-
-            int columnIndex = columns.FindIndex(c => c.Name == columnName);
-            if (columnIndex == -1)
-            {
-                return (OperationStatus.Error, $"Error: La columna '{columnName}' no existe en la tabla '{tableName}'.");
-            }
-
-            bool hasData = false;
-            while (stream.Position < stream.Length)
-            {
-                StringBuilder ConstructorFila = new StringBuilder();
-                string[] rowData = new string[columnCount];
-
-                for (int i = 0; i < columnCount; i++)
-                {
-                    switch (columns[i].DataType)
+                    string startMarker = reader.ReadString();
+                    if (startMarker != "TINYSQLSTART")
                     {
-                        case "INTEGER":
-                            rowData[i] = reader.ReadInt32().ToString();
-                            break;
-                        case "DOUBLE":
-                            rowData[i] = reader.ReadDouble().ToString();
-                            break;
-                        case "DATETIME":
-                            long ticks = reader.ReadInt64();
-                            DateTime dateTime = new DateTime(ticks);
-                            rowData[i] = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-                            break;
-                        default:
-                            int length = reader.ReadInt32();
-                            rowData[i] = new string(reader.ReadChars(length));
-                            break;
+                        throw new InvalidDataException("Formato de archivo inválido.");
                     }
-                }
 
-                // Realizar la comparación dependiendo del tipo de dato y el operador
-                bool conditionMet = EvaluateCondition(columns[columnIndex].DataType, rowData[columnIndex], conditionValue, operatorValue);
+                    int columnCount = reader.ReadInt32();
+                    List<ColumnDefinition> columns = new List<ColumnDefinition>();
+                    // Leer la estructura de la tabla
+                    for (int i = 0; i < columnCount; i++)
+                    {
+                        var column = new ColumnDefinition
+                        {
+                            Name = reader.ReadString(),
+                            DataType = reader.ReadString(),
+                            IsNullable = reader.ReadBoolean(),
+                            IsPrimaryKey = reader.ReadBoolean(),
+                            VarcharLength = reader.ReadInt32()
+                        };
+                        columns.Add(column);
+                    }
 
-                if (conditionMet)
-                {
-                    hasData = true;
-                    resultBuilder.AppendLine(string.Join(",", rowData));
+                    string endStructureMarker = reader.ReadString();
+                    if (endStructureMarker != "ENDSTRUCTURE")
+                    {
+                        throw new InvalidDataException("Estructura del archivo inválida");
+                    }
+                    
+                    // Construir el encabezado del resultado
+                    resultBuilder.AppendLine(string.Join(",", columns.Select(c => c.Name)));
+
+                    string dataStartMarker = reader.ReadString();
+                    if (dataStartMarker != "DATASTART")
+                    {
+                        throw new InvalidDataException("Marca donde comienza la información no encontrada");
+                    }
+                    
+                    // Buscar el índice de la columna
+                    int columnIndex = columns.FindIndex(c => c.Name == columnName);
+                    if (columnIndex == -1)
+                    {
+                        return (OperationStatus.Error, $"Error: La columna '{columnName}' no existe en la tabla '{tableName}'.");
+                    }
+
+                    bool hasData = false;
+                    // Leer los datos y comparar con la condición
+                    while (stream.Position < stream.Length)
+                    {
+                        StringBuilder ConstructorFila = new StringBuilder();
+                        string[] rowData = new string[columnCount];
+
+                        for (int i = 0; i < columnCount; i++)
+                        {
+                            switch (columns[i].DataType)
+                            {
+                                case "INTEGER":
+                                    rowData[i] = reader.ReadInt32().ToString();
+                                    break;
+                                case "DOUBLE":
+                                    rowData[i] = reader.ReadDouble().ToString();
+                                    break;
+                                case "DATETIME":
+                                    long ticks = reader.ReadInt64();
+                                    DateTime dateTime = new DateTime(ticks);
+                                    rowData[i] = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                                    break;
+                                default:
+                                    int length = reader.ReadInt32();
+                                    rowData[i] = new string(reader.ReadChars(length));
+                                    break;
+                            }
+                        }
+
+                        // Realizar la comparación dependiendo del tipo de dato y el operador
+                        bool conditionMet = EvaluateCondition(columns[columnIndex].DataType, rowData[columnIndex], conditionValue, operatorValue);
+
+                        if (conditionMet)
+                        {
+                            hasData = true;
+                            resultBuilder.AppendLine(string.Join(",", rowData));
+                        }
+                    }
+
+                    if (!hasData)
+                    {
+                        return (OperationStatus.Success, "No se encontraron datos que coincidan con la condición.");
+                    }
+
+                    return (OperationStatus.Success, resultBuilder.ToString());
                 }
             }
-
-            if (!hasData)
+            catch (Exception ex)
             {
-                return (OperationStatus.Success, "No se encontraron datos que coincidan con la condición.");
+                Console.WriteLine($"Error al leer el archivo: {ex.Message}");
+                return (OperationStatus.Error, $"Error: {ex.Message}");
             }
-
-            return (OperationStatus.Success, resultBuilder.ToString());
         }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error al leer el archivo: {ex.Message}");
-        return (OperationStatus.Error, $"Error: {ex.Message}");
-    }
-}
 
-// Función para evaluar las condiciones de la cláusula WHERE
-private bool EvaluateCondition(string dataType, string columnValue, string conditionValue, string operatorValue)
-{
-    switch (dataType)
-    {
-        case "INTEGER":
-            int intColumnValue = int.Parse(columnValue);
-            int intConditionValue = int.Parse(conditionValue);
-            return CompareValues(intColumnValue, intConditionValue, operatorValue);
+        // Función para evaluar las condiciones de la cláusula WHERE
+        private bool EvaluateCondition(string dataType, string columnValue, string conditionValue, string operatorValue)
+        {
+            switch (dataType)
+            {
+                case "INTEGER":
+                    int intColumnValue = int.Parse(columnValue);
+                    int intConditionValue = int.Parse(conditionValue);
+                    return CompareValues(intColumnValue, intConditionValue, operatorValue);
 
-        case "DOUBLE":
-            double doubleColumnValue = double.Parse(columnValue);
-            double doubleConditionValue = double.Parse(conditionValue);
-            return CompareValues(doubleColumnValue, doubleConditionValue, operatorValue);
+                case "DOUBLE":
+                    double doubleColumnValue = double.Parse(columnValue);
+                    double doubleConditionValue = double.Parse(conditionValue);
+                    return CompareValues(doubleColumnValue, doubleConditionValue, operatorValue);
 
-        case "DATETIME":
-            DateTime dateTimeColumnValue = DateTime.Parse(columnValue);
-            DateTime dateTimeConditionValue = DateTime.Parse(conditionValue);
-            return CompareValues(dateTimeColumnValue, dateTimeConditionValue, operatorValue);
+                case "DATETIME":
+                    DateTime dateTimeColumnValue = DateTime.Parse(columnValue);
+                    DateTime dateTimeConditionValue = DateTime.Parse(conditionValue);
+                    return CompareValues(dateTimeColumnValue, dateTimeConditionValue, operatorValue);
 
-        default: // Para strings y otros tipos
-            return CompareValues(columnValue, conditionValue, operatorValue);
-    }
-}
+                default: // Para strings y otros tipos
+                    return CompareValues(columnValue, conditionValue, operatorValue);
+            }
+        }
 
-// Función genérica para comparar valores con el operador dado
-private bool CompareValues<T>(T columnValue, T conditionValue, string operatorValue) where T : IComparable
-{
-    switch (operatorValue)
-    {
-        case "==": return columnValue.CompareTo(conditionValue) == 0;
-        case "!=": return columnValue.CompareTo(conditionValue) != 0;
-        case "<": return columnValue.CompareTo(conditionValue) < 0;
-        case ">": return columnValue.CompareTo(conditionValue) > 0;
-        case "<=": return columnValue.CompareTo(conditionValue) <= 0;
-        case ">=": return columnValue.CompareTo(conditionValue) >= 0;
-        default: throw new InvalidOperationException($"Operador no soportado: {operatorValue}");
-    }
-}
-                public (OperationStatus Status, string Data) Select(string NombreDeTableASeleccionar) //Permite leer todo el contenido de un archivo binario(Tablas)
+        // Función genérica para comparar valores con el operador dado
+        private bool CompareValues<T>(T columnValue, T conditionValue, string operatorValue) where T : IComparable
+        {
+            switch (operatorValue)
+
+            //Se comparan los valores y se devuelve un booleano dependiendo del resultado de la comparación.
+            //Si da 0 significa que son iguales, si da -1 significa que el valor de la columna es menor al valor de la condición, si da 1 significa que el valor de la columna es mayor al valor de la condición.
+            {
+                case "==": return columnValue.CompareTo(conditionValue) == 0;
+                case "!=": return columnValue.CompareTo(conditionValue) != 0;
+                case "<": return columnValue.CompareTo(conditionValue) < 0;
+                case ">": return columnValue.CompareTo(conditionValue) > 0;
+                case "<=": return columnValue.CompareTo(conditionValue) <= 0;
+                case ">=": return columnValue.CompareTo(conditionValue) >= 0;
+                default: throw new InvalidOperationException($"Operador no soportado: {operatorValue}");
+            }
+        }
+
+        public OperationStatus Update(string tableName, string columnToUpdate, string newValue, string whereColumn, string whereValue) //Operación para poder crear tablas vacías pero con encabezados a los cuales agregarles datos.
+        {
+            var updateOperation = new UpdateOperation(RutaDeterminadaPorSet);
+            return updateOperation.Execute(tableName,columnToUpdate, newValue, whereColumn, whereValue);
+        }
+        public (OperationStatus Status, string Data) Select(string NombreDeTableASeleccionar) //Permite leer todo el contenido de un archivo binario(Tablas)
         {
             // Prepara el nombre completo del archivo de la tabla
             string tableName = NombreDeTableASeleccionar + ".Table"; //Se preapara la tabla a leer.
@@ -376,10 +390,171 @@ private bool CompareValues<T>(T columnValue, T conditionValue, string operatorVa
             return CreateIndexesStoreOperation.Execute(indexName, tableName, columnName, indexType);
         }
 
-        public OperationStatus SelectWhere(){
+        public (OperationStatus Status, string Data) DeleteWhere(string tableName, string columnName, string conditionValue)
+            {
+                //Genera la ruta de la tabla donde ejecutar los cambios
+                string fullPath = Path.Combine(RutaDeterminadaPorSet, tableName + ".Table");
 
-            return OperationStatus.Success;
+                if (!File.Exists(fullPath))
+                {
+                    return (OperationStatus.Error, $"Error: La tabla '{tableName}' no existe.");
+                }
 
-        }
+                //Crea una tabla temporal para almacenar los datos sin las filas que coincidan con la condición
+                string tempFilePath = Path.Combine(RutaDeterminadaPorSet, tableName + "_temp.Table");
+
+                try
+                {
+                    // Abrir el archivo original y el archivo temporal
+                    using (FileStream stream = File.Open(fullPath, FileMode.Open))
+                    using (BinaryReader reader = new BinaryReader(stream))
+                    using (FileStream tempStream = File.Open(tempFilePath, FileMode.Create))
+                    using (BinaryWriter writer = new BinaryWriter(tempStream))
+                    {
+                        // Leer encabezado del archivo original
+                        string startMarker = reader.ReadString();
+                        if (startMarker != "TINYSQLSTART")
+                        {
+                            throw new InvalidDataException("Formato de archivo inválido.");
+                        }
+
+                        int columnCount = reader.ReadInt32();
+                        // Leer la estructura de la tabla
+                        List<ColumnDefinition> columns = new List<ColumnDefinition>();
+
+                        for (int i = 0; i < columnCount; i++)
+                        {
+                            var column = new ColumnDefinition
+                            {
+                                Name = reader.ReadString(),
+                                DataType = reader.ReadString(),
+                                IsNullable = reader.ReadBoolean(),
+                                IsPrimaryKey = reader.ReadBoolean(),
+                                VarcharLength = reader.ReadInt32()
+                            };
+                            columns.Add(column);
+                        }
+                        // Verificar la marca de fin de estructura
+                        string endStructureMarker = reader.ReadString();
+                        if (endStructureMarker != "ENDSTRUCTURE")
+                        {
+                            throw new InvalidDataException("Invalid file structure");
+                        }
+
+                        // Escribir encabezado al archivo temporal
+                        writer.Write("TINYSQLSTART");
+                        writer.Write(columnCount);
+                        // Escribir la estructura de la tabla
+                        foreach (var column in columns)
+                        {
+                            writer.Write(column.Name);
+                            writer.Write(column.DataType);
+                            writer.Write(column.IsNullable);
+                            writer.Write(column.IsPrimaryKey);
+
+                            // Manejar el valor nullable de VarcharLength
+                            if (column.VarcharLength.HasValue)
+                            {
+                                writer.Write(column.VarcharLength.Value);  // Escribir el valor si no es null
+                            }
+                            else
+                            {
+                                writer.Write(0);  // Puedes decidir un valor predeterminado o lanzar una excepción
+                            }
+                        }
+                        writer.Write("ENDSTRUCTURE");
+
+                        // Buscar el inicio de los datos
+                        string dataStartMarker = reader.ReadString();
+                        if (dataStartMarker != "DATASTART")
+                        {
+                            throw new InvalidDataException("Marca donde comienza la información no encontrada");
+                        }
+
+                        // Escribir el inicio de los datos en el archivo temporal
+                        writer.Write("DATASTART");
+
+                        int columnIndex = columns.FindIndex(c => c.Name == columnName);
+                        if (columnIndex == -1)
+                        {
+                            return (OperationStatus.Error, $"Error: La columna '{columnName}' no existe en la tabla '{tableName}'.");
+                        }
+
+                        // Leer los datos y omitir las filas que coincidan con la condición
+                        while (stream.Position < stream.Length)
+                        {
+                            bool matchCondition = false;
+                            long rowStartPosition = stream.Position;  // Guardamos la posición al inicio de la fila
+                            string[] rowData = new string[columnCount];
+
+                            for (int i = 0; i < columnCount; i++)
+                            {
+                                switch (columns[i].DataType)
+                                {
+                                    case "INTEGER":
+                                        rowData[i] = reader.ReadInt32().ToString();
+                                        break;
+                                    case "DOUBLE":
+                                        rowData[i] = reader.ReadDouble().ToString();
+                                        break;
+                                    case "DATETIME":
+                                        long ticks = reader.ReadInt64();
+                                        DateTime dateTime = new DateTime(ticks);
+                                        rowData[i] = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                                        break;
+                                    default:
+                                        int length = reader.ReadInt32();
+                                        rowData[i] = new string(reader.ReadChars(length));
+                                        break;
+                                }
+                            }
+
+                            // Verificamos si la fila cumple con la condición para eliminar
+                            if (rowData[columnIndex] == conditionValue)
+                            {
+                                matchCondition = true;  // Se omite esta fila
+                            }
+
+                            // Escribimos la fila al archivo temporal solo si no coincide con la condición
+                            if (!matchCondition)
+                            {
+                                for (int i = 0; i < columnCount; i++)
+                                {
+                                    switch (columns[i].DataType)
+                                    {
+                                        case "INTEGER":
+                                            writer.Write(int.Parse(rowData[i]));
+                                            break;
+                                        case "DOUBLE":
+                                            writer.Write(double.Parse(rowData[i]));
+                                            break;
+                                        case "DATETIME":
+                                            writer.Write(DateTime.Parse(rowData[i]).Ticks);
+                                            break;
+                                        default:
+                                            writer.Write(rowData[i].Length);
+                                            writer.Write(rowData[i].ToCharArray());
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Reemplazamos el archivo original por el temporal
+                    File.Delete(fullPath);
+                    File.Move(tempFilePath, fullPath);
+
+                    return (OperationStatus.Success, "Filas eliminadas correctamente.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error during delete: {ex.Message}");
+                    return (OperationStatus.Error, ex.Message);
+                }
+            }
+
+
+        
     }
 }
