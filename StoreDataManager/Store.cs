@@ -99,11 +99,10 @@ namespace StoreDataManager
         }
 
                 //!!!!!!!!!!!!!!!!!!!!Este método tiene que ser reestructurado según como se pide en el documento.!!!!!!!!!!!!!!!!!!!!!
-        public (OperationStatus Status, string Data) Select(string tableName, string[] columnsToSelect, string whereClause = null) //Permite leer todo el contenido de un archivo binario(Tablas)
+        public (OperationStatus Status, string Data) Select(string NombreDeTableASeleccionar) //Permite leer todo el contenido de un archivo binario(Tablas)
         {
-            //TODO: Aplicar el whereClause y seleccionar solo las columnas que se pidan
             // Prepara el nombre completo del archivo de la tabla
-            string nombreTabla = tableName + ".Table"; //Se preapara la tabla a leer.
+            string tableName = NombreDeTableASeleccionar + ".Table"; //Se preapara la tabla a leer.
             string fullPath = Path.Combine(RutaDeterminadaPorSet, tableName);//Se combina toda la ruta
 
             // Log para depuración
@@ -114,7 +113,7 @@ namespace StoreDataManager
             if (!File.Exists(fullPath))//Prevención de errores, la tabla no existe.
             {
                 Console.WriteLine($"Error: The table file '{fullPath}' does not exist.");
-                return (OperationStatus.Error, $"Error: La tabla '{tableName}' no existe.");
+                return (OperationStatus.Error, $"Error: La tabla '{NombreDeTableASeleccionar}' no existe.");
             }
         
             StringBuilder resultBuilder = new StringBuilder(); //Creamos una string mutable que pueda albergar toda la estructura que contiene el archivo binario.
@@ -133,83 +132,9 @@ namespace StoreDataManager
                     // Leer la estructura de la tabla
                     int columnCount = reader.ReadInt32();
                     List<ColumnDefinition> columns = new List<ColumnDefinition>();
-
-                    List<ColumnDefinition> selectedColumns;
-                    if (columnsToSelect.Length == 1 && columnsToSelect[0] == "*")
-                    {
-                        selectedColumns = columns; // Selecciona todas las columnas
-                    }
-                    else
-                    {
-                        selectedColumns = columns.Where(c => columnsToSelect.Contains(c.Name)).ToList();
-                    }
-
-                    //TODO: Implementar la selección de columnas y la cláusula WHERE
-                    /*
-                    
-                    while (stream.Position < stream.Length)
-                    {
-                        StringBuilder ConstructorFila = new StringBuilder();
-                        bool matchesWhereClause = true;
-
-                        foreach (var column in allColumns)
-                        {
-                            string value = null;
-
-                            // Leer los valores según el tipo de dato
-                            switch (column.DataType)
-                            {
-                                case "INTEGER":
-                                    value = reader.ReadInt32().ToString();
-                                    break;
-                                case "DOUBLE":
-                                    value = reader.ReadDouble().ToString();
-                                    break;
-                                case "DATETIME":
-                                    long ticks = reader.ReadInt64();
-                                    DateTime dateTime = new DateTime(ticks);
-                                    value = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
-                                    break;
-                                default:
-                                    int length = reader.ReadInt32();
-                                    value = new string(reader.ReadChars(length));
-                                    break;
-                            }
-
-                            // Solo agrega las columnas seleccionadas
-                            if (selectedColumns.Any(c => c.Name == column.Name))
-                            {
-                                ConstructorFila.Append(value + ",");
-                            }
-
-                            // Verificar la cláusula WHERE si aplica
-                            if (!string.IsNullOrEmpty(whereClause))
-                            {
-                                var whereParts = whereClause.Split(' ');
-                                string whereColumn = whereParts[0]; // Nombre de la columna
-                                string operatorSymbol = whereParts[1]; // Operador (=, >, <, etc.)
-                                string whereValue = whereParts[2]; // Valor de comparación
-
-                                if (column.Name == whereColumn)
-                                {
-                                    matchesWhereClause = EvaluateWhereClause(value, operatorSymbol, whereValue);
-                                }
-                            }
-                        }
-
-                        if (matchesWhereClause)
-                        {
-                            resultBuilder.AppendLine(ConstructorFila.ToString().TrimEnd(','));
-                        }
-                    }
-                    
-                    Creado desde GPT
-
-                    
-                    */
+        
                     for (int i = 0; i < columnCount; i++) //Se comienza a añadir como columnas los encabezados
                     {
-                        
                         var column = new ColumnDefinition//<-- Este archivo se encuentra en Entities, permite definir que tipos de datos se esperan y cuales son.
                         {
                             Name = reader.ReadString(),

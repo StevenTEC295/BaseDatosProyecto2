@@ -62,36 +62,15 @@ namespace QueryProcessor
             // Implementación de la sentencia SELECT
             if (sentence.StartsWith("SELECT"))
             {
-                string[] columnsToSelect;
-                string tableName;
-                string whereClause = null;
-
-                //Detectar si hay un Where
-                if (sentence.Contains("WHERE"))
-                {
-                    var parts = sentence.Split(new[] { "WHERE" }, StringSplitOptions.None);
-                    whereClause = parts[1].Trim();
-                    var selectPart = parts[0].Trim();
-                    // Parsear la parte del SELECT
-                    columnsToSelect = ParseColumnsToSelect(selectPart);
-                    tableName = ExtractTableNameFromSelect(selectPart);
-                }
-                else
-                {
-                    // Si no hay WHERE, solo parsear el SELECT y FROM
-                    columnsToSelect = ParseColumnsToSelect(sentence);
-                    tableName = ExtractTableNameFromSelect(sentence);
-                }
-
                 const string selectDataBaseKeyWord = "SELECT * FROM";
                 var DataBaseToSelect = sentence.Substring(selectDataBaseKeyWord.Length).Trim(); //Igual, eliminamos la pabra clave.
 
-               if (string.IsNullOrWhiteSpace(tableName))
+                if (string.IsNullOrWhiteSpace(DataBaseToSelect))  //En caso de que se ingrese mal.
                 {
-                    throw new InvalidOperationException("Debe ingresar un nombre de tabla para seleccionar.");
+                    throw new InvalidOperationException("Debe ingresar un nombre de una BD para seleccionar");
                 }
 
-                var result = new Select().Execute(tableName, columnsToSelect, whereClause); // Pasar columnas, tabla y cláusula WHERE
+                var result = new Select().Execute(DataBaseToSelect); //Pasamos el nombre de la pase de datos a seleccionar.
                 return result;
             }
             //Auxiliares de Select
