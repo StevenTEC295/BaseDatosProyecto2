@@ -30,5 +30,16 @@ UPDATE Empleados SET Nombre = "Anthony" WHERE ID == 1;
 UPDATE Empleados SET Apellido = "Artavia" WHERE ID == 1;
 UPDATE Empleados SET Salario = "1111" WHERE ID == 1;
 
+SELECT * FROM Empleados;
+
 SELECT * FROM Empleados WHERE Nombre LIKE *Da*;
+
+SELECT * FROM Empleados WHERE Salario > 3000;
+
+DELETE FROM Empleados WHERE Salario == 2308;
+
+SELECT * FROM Empleados;
+
+DELETE FROM Empleados;
+
 SELECT * FROM Empleados;
