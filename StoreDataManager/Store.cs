@@ -2,6 +2,7 @@
 using System.Data;
 using System.Text;
 using StoreDataManager.StoreOperations;
+using System.Collections.Generic;
 
 namespace StoreDataManager
 {
@@ -192,7 +193,7 @@ namespace StoreDataManager
                         }
 
                         // Realizar la comparación dependiendo del tipo de dato y el operador
-                        bool conditionMet = EvaluateCondition(columns[columnIndex].DataType, rowData[columnIndex], conditionValue, operatorValue);
+                        bool conditionMet = EvaluateCondition(columns[columnIndex].DataType, rowData[columnIndex], conditionValue, operatorValue.ToLower());
 
                         if (conditionMet)
                         {
@@ -237,11 +238,16 @@ namespace StoreDataManager
                     return CompareValues(dateTimeColumnValue, dateTimeConditionValue, operatorValue);
 
                 default: // Para strings y otros tipos
-                    return CompareValues(columnValue, conditionValue, operatorValue);
+            // Aqui se maneja el like
+            if (operatorValue == "like")
+            {
+                return columnValue.Contains(conditionValue.Replace("*", ""), StringComparison.OrdinalIgnoreCase);
             }
-        }
+            
+            return CompareValues(columnValue, conditionValue, operatorValue);
+        }}
 
-        // Función genérica para comparar valores con el operador dado
+         // Función genérica para comparar valores con el operador dado
         private bool CompareValues<T>(T columnValue, T conditionValue, string operatorValue) where T : IComparable
         {
             switch (operatorValue)
@@ -250,7 +256,7 @@ namespace StoreDataManager
             //Si da 0 significa que son iguales, si da -1 significa que el valor de la columna es menor al valor de la condición, si da 1 significa que el valor de la columna es mayor al valor de la condición.
             {
                 case "==": return columnValue.CompareTo(conditionValue) == 0;
-                case "!=": return columnValue.CompareTo(conditionValue) != 0;
+                case "not": return columnValue.CompareTo(conditionValue) != 0;
                 case "<": return columnValue.CompareTo(conditionValue) < 0;
                 case ">": return columnValue.CompareTo(conditionValue) > 0;
                 case "<=": return columnValue.CompareTo(conditionValue) <= 0;
